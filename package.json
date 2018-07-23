@@ -1,0 +1,22 @@
+{
+  "name": "tusb3410",
+  "version": "0.0.1",
+  "description": "Texas Instruments (TI) TUSB3410 user-space USB driver for Node.js",
+  "main": "index.js",
+  "repository": "https://github.com/tidepool-org/tusb3410",
+  "author": "Gerrit Niezen",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/tidepool-org/tusb3410/issues"
+  },
+  "homepage": "https://github.com/tidepool-org/tusb3410#readme",
+  "dependencies": {
+    "usb": "1.3.2"
+  },
+  "devDependencies": {
+    "eslint": "4.19.1",
+    "eslint-config-airbnb-base": "^13.0.0",
+    "eslint-formatter-pretty": "1.3.0",
+    "eslint-plugin-import": "^2.13.0"
+  }
+}
