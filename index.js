@@ -1070,9 +1070,23 @@ class tusb3410 extends EventEmitter {
   }
 
   write(data, cb) {
-    this.transferOut(1, data).then(() => {
+    let bytesWritten = 0;
+    let bytesLeft = data.byteLength;
+    const MAX_SIZE = 1024;
+
+    (async () => {
+      while (bytesLeft > 0) {
+        const nrBytes = (bytesLeft >= MAX_SIZE) ? MAX_SIZE : bytesLeft;
+        const toSend = data.slice(bytesWritten, bytesWritten + nrBytes);
+
+        // eslint-disable-next-line
+        await this.transferOut(1, toSend);
+        console.log('Sending', nrBytes, 'bytes');
+        bytesLeft -= nrBytes;
+        bytesWritten = data.byteLength - bytesLeft;
+      }
       cb();
-    }, err => cb(err, null));
+    })();
   }
 
   transferIn(endpoint, length) {
