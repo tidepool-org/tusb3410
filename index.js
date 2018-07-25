@@ -1061,12 +1061,14 @@ class tusb3410 extends EventEmitter {
   }
 
   async clearHalt(endpoint) {
-    await this.controlTransferOut({
-      requestType: 'standard',
-      recipient: 'endpoint',
-      request: 0x01, // USB_REQUEST_CLEAR_FEATURE
-      value: 0x0000, // endpoint halt
-      index: endpoint,
+    return new Promise((resolve, reject) => {
+      this.controlTransferOut({
+        requestType: 'standard',
+        recipient: 'endpoint',
+        request: 0x01, // USB_REQUEST_CLEAR_FEATURE
+        value: 0x0000, // endpoint halt
+        index: endpoint,
+      }).then(() => resolve()).catch(err => reject(err));
     });
   }
 
@@ -1085,7 +1087,7 @@ class tusb3410 extends EventEmitter {
 
   controlTransferOut(transfer, data) {
     return new Promise((resolve, reject) => {
-      this.controlTransfer('host-to-device', transfer, data != null ? Buffer.from(data) : Buffer.alloc(0)).then(() => resolve()).catch(() => reject());
+      this.controlTransfer('host-to-device', transfer, data != null ? Buffer.from(data) : Buffer.alloc(0)).then(() => resolve()).catch(err => reject(err));
     });
   }
 
