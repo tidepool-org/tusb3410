@@ -914,7 +914,7 @@ class tusb3410 extends EventEmitter {
     console.log('Device descriptor:', JSON.stringify(self.device.deviceDescriptor, null, 4));
 
     if (self.device.configDescriptor.bConfigurationValue !== 2) {
-    //if (self.device.deviceDescriptor.bDeviceClass === 255) {
+    // if (self.device.deviceDescriptor.bDeviceClass === 255) {
       console.log('setting configuration to 1');
       self.device.setConfiguration(1, () => {
         [self.iface] = self.device.interfaces;
@@ -943,6 +943,10 @@ class tusb3410 extends EventEmitter {
             console.log('Could not write firmware');
           }
 
+          (async () => {
+            await self.clearHalt(0x01);
+          })();
+
           self.iface.release(() => {
             self.iface = null;
             console.log('Released interface');
@@ -969,21 +973,25 @@ class tusb3410 extends EventEmitter {
     console.log('Device descriptor:', JSON.stringify(self.device.deviceDescriptor, null, 4));
     console.log('setting configuration to 2');
     self.device.setConfiguration(2, () => {
-      console.log('Claiming interface from', self.device.interfaces);
-
-      [self.iface] = self.device.interfaces;
-      self.iface.claim();
-
-      console.log(self.iface);
-      self.inEndpoint = self.iface.endpoint(0x81);
-
-      self.inEndpoint.startPoll();
-      self.inEndpoint.on('data', (data) => {
-        self.emit('data', data);
-      });
-
       (async () => {
         try {
+          await self.clearHalt(0x01);
+          await self.clearHalt(0x81);
+          await self.clearHalt(0x83);
+
+          console.log('Claiming interface from', self.device.interfaces);
+
+          [self.iface] = self.device.interfaces;
+          self.iface.claim();
+
+          console.log(self.iface);
+          self.inEndpoint = self.iface.endpoint(0x81);
+
+          self.inEndpoint.startPoll();
+          self.inEndpoint.on('data', (data) => {
+            self.emit('data', data);
+          });
+
           // open port
           await this.controlTransferOut({
             requestType: 'vendor',
@@ -1050,6 +1058,16 @@ class tusb3410 extends EventEmitter {
     };
 
     return (DIRECTION[direction] << 7) || (TYPES[requestType] << 5) || RECIPIENTS[recipient];
+  }
+
+  async clearHalt(endpoint) {
+    await this.controlTransferOut({
+      requestType: 'standard',
+      recipient: 'endpoint',
+      request: 0x01, // USB_REQUEST_CLEAR_FEATURE
+      value: 0x0000, // endpoint halt
+      index: endpoint,
+    });
   }
 
   controlTransfer(direction, transfer, dataOrLength) {
