@@ -908,14 +908,14 @@ class tusb3410 extends EventEmitter {
     this.device.open(false); // don't auto-configure
     const self = this;
 
-    console.log(this.device);
+    console.log(self.device);
 
     console.log('configuration value:', self.device.configDescriptor.bConfigurationValue);
 
     if (self.device.configDescriptor.bConfigurationValue !== 2) {
       console.log('setting configuration to 1');
-      this.device.setConfiguration(1, () => {
-        [self.iface] = this.device.interfaces;
+      self.device.setConfiguration(1, () => {
+        [self.iface] = self.device.interfaces;
         self.iface.claim();
 
         let checksum = null;
@@ -931,7 +931,7 @@ class tusb3410 extends EventEmitter {
         console.log(fwbuffer);
 
         console.log('Writing firmware..');
-        this.write(fwbuffer, (err) => {
+        self.write(fwbuffer, (err) => {
           if (err) {
             console.log('Could not write firmware');
           }
