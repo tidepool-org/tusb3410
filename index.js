@@ -910,15 +910,22 @@ class tusb3410 extends EventEmitter {
 
     console.log(self.device);
 
-    console.log('configuration value:', self.device.configDescriptor.bConfigurationValue);
+    // console.log('configuration value:', self.device.configDescriptor.bConfigurationValue);
+    console.log('Device descriptor:', JSON.stringify(self.device.deviceDescriptor, null, 4));
 
     if (self.device.configDescriptor.bConfigurationValue !== 2) {
+    //if (self.device.deviceDescriptor.bDeviceClass === 255) {
       console.log('setting configuration to 1');
       self.device.setConfiguration(1, () => {
         [self.iface] = self.device.interfaces;
         self.iface.claim();
 
         let checksum = null;
+
+        for (let i = 0; i < 1945; i += 1) {
+          firmware.push(0xFF);
+        }
+
         for (let i = 0; i < firmware.length; i += 1) {
           checksum += firmware[i];
         }
@@ -959,6 +966,7 @@ class tusb3410 extends EventEmitter {
 
   setup() {
     const self = this;
+    console.log('Device descriptor:', JSON.stringify(self.device.deviceDescriptor, null, 4));
     console.log('setting configuration to 2');
     self.device.setConfiguration(2, () => {
       console.log('Claiming interface from', self.device.interfaces);
