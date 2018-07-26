@@ -908,14 +908,14 @@ class tusb3410 extends EventEmitter {
     this.device.open(false); // don't auto-configure
     const self = this;
 
-    console.log('Device descriptor:', JSON.stringify(self.device.deviceDescriptor, null, 4));
-
     try {
-      console.log(self.device.configDescriptor);
+      // on macOS, just trying to access self.device.configDescriptor will throw
+      // a NOT_FOUND error if firmware is not loaded
+      if (self.device.configDescriptor.bConfigurationValue !== 2) {
+        throw Error('Firmware should be loaded first.');
+      }
       self.setup();
-    } catch (err) {
-      // if config descriptor returns NOT_FOUND errror,
-      // we need to load the firmware first
+    } catch (error) {
       console.log('setting configuration to 1');
       self.device.setConfiguration(1, () => {
         [self.iface] = self.device.interfaces;
