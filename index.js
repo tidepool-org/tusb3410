@@ -908,24 +908,20 @@ class tusb3410 extends EventEmitter {
     this.device.open(false); // don't auto-configure
     const self = this;
 
-    console.log(self.device);
-
-    // console.log('configuration value:', self.device.configDescriptor.bConfigurationValue);
     console.log('Device descriptor:', JSON.stringify(self.device.deviceDescriptor, null, 4));
 
-    if (self.device.configDescriptor.bConfigurationValue !== 2) {
-    // if (self.device.deviceDescriptor.bDeviceClass === 255) {
+    try {
+      console.log(self.device.configDescriptor);
+      self.setup();
+    } catch (err) {
+      // if config descriptor returns NOT_FOUND errror,
+      // we need to load the firmware first
       console.log('setting configuration to 1');
       self.device.setConfiguration(1, () => {
         [self.iface] = self.device.interfaces;
         self.iface.claim();
 
         let checksum = null;
-
-        for (let i = 0; i < 1945; i += 1) {
-          firmware.push(0xFF);
-        }
-
         for (let i = 0; i < firmware.length; i += 1) {
           checksum += firmware[i];
         }
@@ -943,42 +939,32 @@ class tusb3410 extends EventEmitter {
             console.log('Could not write firmware');
           }
 
-          (async () => {
-            await self.clearHalt(0x01);
-          })();
-
           self.iface.release(() => {
             self.iface = null;
             console.log('Released interface');
 
             self.device.reset(() => {
               console.log('Reset device');
+              self.device.close();
               setTimeout(() => {
-                self.device.close();
                 self.device = usb.findByIds(vendorId, productId);
                 self.device.open(false);
                 self.setup();
-              }, 250);
+              }, 2000); // one second is not long enough
             });
           });
         });
       });
-    } else {
-      self.setup();
     }
   }
 
   setup() {
     const self = this;
-    console.log('Device descriptor:', JSON.stringify(self.device.deviceDescriptor, null, 4));
+
     console.log('setting configuration to 2');
     self.device.setConfiguration(2, () => {
       (async () => {
         try {
-          await self.clearHalt(0x01);
-          await self.clearHalt(0x81);
-          await self.clearHalt(0x83);
-
           console.log('Claiming interface from', self.device.interfaces);
 
           [self.iface] = self.device.interfaces;
@@ -1060,18 +1046,6 @@ class tusb3410 extends EventEmitter {
     return (DIRECTION[direction] << 7) || (TYPES[requestType] << 5) || RECIPIENTS[recipient];
   }
 
-  async clearHalt(endpoint) {
-    return new Promise((resolve, reject) => {
-      this.controlTransferOut({
-        requestType: 'standard',
-        recipient: 'endpoint',
-        request: 0x01, // USB_REQUEST_CLEAR_FEATURE
-        value: 0x0000, // endpoint halt
-        index: endpoint,
-      }).then(() => resolve()).catch(err => reject(err));
-    });
-  }
-
   controlTransfer(direction, transfer, dataOrLength) {
     return new Promise((resolve, reject) => {
       this.device.controlTransfer(tusb3410.getRequestType(direction, transfer.requestType, transfer.recipient), transfer.request, transfer.value, transfer.index, dataOrLength,
@@ -1145,7 +1119,6 @@ class tusb3410 extends EventEmitter {
 
   close(cb) {
     // close port
-    /*
     this.controlTransferOut({
       requestType: 'vendor',
       recipient: 'device',
@@ -1153,13 +1126,12 @@ class tusb3410 extends EventEmitter {
       value: 0x00,
       index: 0x03,
     }).then(() => {
-    */
-    this.iface.release(true, () => {
-      this.removeAllListeners();
-      this.device.close();
-      return cb();
+      this.iface.release(true, () => {
+        this.removeAllListeners();
+        this.device.close();
+        return cb();
+      });
     });
-    // });
   }
 }
 
